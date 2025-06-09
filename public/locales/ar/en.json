@@ -1,0 +1,39 @@
+{
+  "general": {
+    "hello_world": "Hello World",
+    "max": "Max",
+    "min": "Min",
+    "wind": "Wind",
+    "humidity": "Humidity",
+    "weather": "Weather",
+    "arabic": "Arabic",
+    "english": "English",
+    "weather_description": "Weather Description",
+    "weather_app": "Weather App"
+  },
+  "cities": {
+    "rabat": "Rabat",
+    "beni_mellal": "Beni Mellal",
+    "sidi_slimane": "Sidi Slimane",
+    "casablanca": "Casablanca",
+    "fes": "Fes",
+    "kenitra": "Kenitra",
+    "agadir": "Agadir",
+    "dakhla": "Dakhla",
+    "tangier": "Tangier",
+    "tetouan": "Tetouan",
+    "tata": "Tata",
+    "ouarzazate": "Ouarzazate"
+  },
+  "weather": {
+    "clear_sky": "Clear sky",
+    "few_clouds": "Few clouds",
+    "scattered_clouds": "Scattered clouds",
+    "broken_clouds": "Broken clouds",
+    "shower_rain": "Shower rain",
+    "rain": "Rain",
+    "thunderstorm": "Thunderstorm",
+    "snow": "Snow",
+    "mist": "Mist"
+  }
+}

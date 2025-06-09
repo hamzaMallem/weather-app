@@ -1,5 +1,9 @@
 .App {
   text-align: center;
+  /* background: #2196f3; */
+}
+body{
+  background-color: #0052d0 !important;
 }
 
 .App-logo {
@@ -36,3 +40,35 @@
     transform: rotate(360deg);
   }
 }
+/* CUSTOM FONT */
+@font-face {
+  font-family: IBM;
+  src: url("/public/font/IBM/IBMPlexSansArabic-Thin.ttf");
+  weight:100;
+}
+@font-face {
+  font-family: IBM;
+  src: url("/public/font/IBM/IBMPlexSansArabic-Light.ttf");
+  weight:300;
+}
+@font-face {
+  font-family: IBM;
+  src: url("/public/font/IBM/IBMPlexSansArabic-Regular.ttf");
+  weight:400;
+}
+@font-face {
+  font-family: IBM;
+  src: url("/public/font/IBM/IBMPlexSansArabic-Medium.ttf");
+  weight:500;
+}
+@font-face {
+  font-family: IBM;
+  src: url("/public/font/IBM/IBMPlexSansArabic-SemiBold.ttf");
+  weight:600;
+}
+@font-face {
+  font-family: IBM;
+  src: url("/public/font/IBM/IBMPlexSansArabic-Bold.ttf");
+  weight:700;
+}
+
