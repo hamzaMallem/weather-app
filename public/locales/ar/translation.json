@@ -31,5 +31,9 @@
   "tangier": "طنجة",
   "tetouan": "تطوان",
   "tata": "طاطا",
-  "ouarzazate": "ورزازات"
+  "ouarzazate": "ورزازات",
+
+  "feelsLike": "يشعر كأنه",
+  "usingYourLocation": "جارٍ تحديد موقعك...",
+  "errorFetchingData": "تعذر تحميل بيانات الطقس."
 }

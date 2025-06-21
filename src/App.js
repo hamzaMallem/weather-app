@@ -1,31 +1,29 @@
-import logo from "./logo.svg";
 import "./App.css";
-// material library
-import Button from "@mui/material/Button";
-import Container from "@mui/material/Container";
-import Typography from "@mui/material/Typography";
-import CloudIcon from "@mui/icons-material/Cloud";
-import Select from "@mui/material/Select";
-import MenuItem from "@mui/material/MenuItem";
+import logo from "./logo.svg";
 import { useEffect, useState } from "react";
-// axios for API requests
 import axios from "axios";
 import moment from "moment";
-import { useTranslation } from "react-i18next";
+import "moment/locale/ar";
 import "moment/locale/en-gb";
-import "moment/locale/ar"; // Import Arabic locale for moment.js
+import { useTranslation } from "react-i18next";
 
-import { createTheme, ThemeProvider } from "@mui/material";
-// material library
+import {
+  Container,
+  Typography,
+  Button,
+  Select,
+  MenuItem,
+  createTheme,
+  ThemeProvider,
+} from "@mui/material";
+import CloudIcon from "@mui/icons-material/Cloud";
+
 const theme = createTheme({
   typography: {
     fontFamily: ["IBM"],
   },
 });
 
-let cancelAxios = null;
-
-// Define cities with their coordinates and translation keys
 const cities = [
   { name: "rabat", lat: 34.01325, lon: -6.83255 },
   { name: "beni mellal", lat: 32.3373, lon: -6.3498 },
@@ -41,80 +39,124 @@ const cities = [
   { name: "ouarzazate", lat: 30.9189, lon: -6.8934 },
 ];
 
+let cancelAxios = null;
+
 function App() {
   const { t, i18n } = useTranslation();
   const [language, setLanguage] = useState("ar");
-  const [selectedCity, setSelectedCity] = useState("rabat"); // Default city
+  const [selectedCity, setSelectedCity] = useState("");
+  const [isAutoLocating, setIsAutoLocating] = useState(true);
   const [dateTimeUse, setDateTimeUse] = useState("");
   const [temp, setTemp] = useState({
-    temp: null,
+    number: null,
     description: "",
     min: null,
     max: null,
     icon: "",
+    feelsLike: null,
+    humidity: null,
   });
+  const [error, setError] = useState(null);
 
-  function handleChangeLanguage() {
+  // Switch language
+  const handleChangeLanguage = () => {
     const newLang = language === "ar" ? "en" : "ar";
     i18n.changeLanguage(newLang);
     setLanguage(newLang);
-  }
+  };
 
-  // Update date and time based on language
+  // Set locale format
   useEffect(() => {
     moment.locale(language);
-    let dateTime = moment().format(" dddd , MMMM Do YYYY ");
-    setDateTimeUse(dateTime);
+    setDateTimeUse(moment().format(" dddd , MMMM Do YYYY "));
   }, [language]);
 
-  // Fetch weather data based on selected city
+  // Detect user location and find closest city
   useEffect(() => {
-    // Find the selected city's coordinates
+    const savedCity = localStorage.getItem("city");
+    if (savedCity) {
+      setSelectedCity(savedCity);
+      setIsAutoLocating(false);
+      return;
+    }
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const userLat = position.coords.latitude;
+          const userLon = position.coords.longitude;
+
+          let closestCity = cities[0];
+          let minDistance = Infinity;
+
+          cities.forEach((city) => {
+            const d = Math.sqrt(
+              Math.pow(city.lat - userLat, 2) +
+              Math.pow(city.lon - userLon, 2)
+            );
+            if (d < minDistance) {
+              minDistance = d;
+              closestCity = city;
+            }
+          });
+
+          setSelectedCity(closestCity.name);
+          localStorage.setItem("city", closestCity.name);
+          setIsAutoLocating(false);
+        },
+        (error) => {
+          console.warn("Geolocation error:", error);
+          setSelectedCity("rabat");
+          setIsAutoLocating(false);
+        }
+      );
+    } else {
+      setSelectedCity("rabat");
+      setIsAutoLocating(false);
+    }
+  }, []);
+
+  // Fetch weather data for selected city
+  useEffect(() => {
+    if (!selectedCity) return;
     const city = cities.find((c) => c.name === selectedCity);
     if (!city) return;
 
+    setError(null);
     axios
       .get(
         `https://api.openweathermap.org/data/2.5/weather?lat=${city.lat}&lon=${city.lon}&appid=f1ba2bfba05c03871e1aee3440ecb724`,
         {
           cancelToken: new axios.CancelToken((c) => {
-            cancelAxios = c; // Save the cancel function
+            cancelAxios = c;
           }),
         }
       )
-      .then(function (response) {
-        // handle success
-        const responseTemp = Math.round(response.data.main.temp - 273.15); // Convert Kelvin to Celsius
-        const responseDescription = response.data.weather[0].description;
-        const responseMin = Math.round(response.data.main.temp_min - 273.15);
-        const responseMax = Math.round(response.data.main.temp_max - 273.15);
-        const responseIcon = response.data.weather[0].icon;
-        const responseFeelsLike = Math.round(
-          response.data.main.feels_like - 273.15
-        );
-        const responseHumidity = response.data.main.humidity;
+      .then((res) => {
+        const main = res.data.main;
+        const weather = res.data.weather[0];
+        const responseWind = res.data.wind?.speed;
 
         setTemp({
-          number: responseTemp,
-          description: responseDescription,
-          min: responseMin,
-          max: responseMax,
-          feelsLike: responseFeelsLike,
-          humidity: responseHumidity,
-          icon: responseIcon,
+          number: Math.round(main.temp - 273.15),
+          description: weather.description,
+          min: Math.round(main.temp_min - 273.15),
+          max: Math.round(main.temp_max - 273.15),
+          icon: weather.icon,
+          feelsLike: Math.round(main.feels_like - 273.15),
+          humidity: main.humidity,
+          wind: responseWind,
         });
-        console.log(response);
       })
-      .catch(function (error) {
-        // handle error
-        console.log(error);
+      .catch((err) => {
+        setError(t("errorFetchingData"));
+        console.error(err);
       });
 
-    // Cleanup function to cancel the request if the component unmounts or city changes
     return () => {
       if (cancelAxios) cancelAxios();
     };
-  }, [selectedCity]); // Re-run when selectedCity changes
+  }, [selectedCity]);
 
   return (
     <div className="App">
@@ -129,16 +171,15 @@ function App() {
             flexDirection: "column",
           }}
         >
-          {/* City Selection Dropdown */}
-          <div
-            dir={language === "ar" ? "rtl" : "ltr"}
-            style={{ marginBottom: "20px", width: "100%" }}
-          >
+          <div dir={language === "ar" ? "rtl" : "ltr"} style={{ width: "100%" }}>
+            {isAutoLocating && !selectedCity && (
+              <Typography>{t("usingYourLocation")}...</Typography>
+            )}
             <Select
               value={selectedCity}
               onChange={(e) => setSelectedCity(e.target.value)}
               fullWidth
-              style={{ backgroundColor: "white" }}
+              style={{ backgroundColor: "white", marginBottom: 20 }}
             >
               {cities.map((city) => (
                 <MenuItem key={city.name} value={city.name}>
@@ -147,7 +188,8 @@ function App() {
               ))}
             </Select>
           </div>
-          {/* CARD */}
+
+          {/* Weather Card */}
           <div
             dir={language === "ar" ? "rtl" : "ltr"}
             style={{
@@ -159,89 +201,47 @@ function App() {
               boxShadow: "0px 11px 4px 4px rgba(0,0,0,0.05)",
             }}
           >
-            {/* CONTENT */}
             <div>
-              {/* CITY & TIME */}
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "end",
-                  justifyContent: "space-between",
-                }}
-              >
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <Typography variant="h2">{t(selectedCity)}</Typography>
-                <Typography variant="h6" style={{ marginRight: "20px" }}>
-                  {dateTimeUse}
-                </Typography>
+                <Typography variant="h6">{dateTimeUse}</Typography>
               </div>
               <hr />
-              {/* CITY & TIME */}
-              {/* DEGREE & DESCRIPTION */}
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "flex-end",
-                    textAlign: "center",
-                    gap: 1,
-                    padding: 2,
-                  }}
-                  dir="rtl"
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "center",
-                      alignItems: "center",
-                    }}
-                  >
-                    <Typography variant="h2" style={{ textAlign: "center" }}>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <div style={{ textAlign: "center", padding: 2 }}>
+                  <div style={{ display: "flex", alignItems: "center" }}>
+                    <Typography variant="h2">
                       {temp.number ? `${temp.number}°C` : "Loading..."}
                     </Typography>
                     {temp.icon && (
                       <img
                         src={`https://openweathermap.org/img/wn/${temp.icon}@2x.png`}
-                        alt="Weather icon"
+                        alt="icon"
                       />
                     )}
                   </div>
-                  <div style={{ marginLeft: "30px" }}>
-                    <Typography variant="h6" style={{ textAlign: "center" }}>
-                      {t(temp.description)}
-                    </Typography>
+                  <Typography variant="h6">{t(temp.description)}</Typography>
+                  <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
+                    <Typography>{t("min")} : {temp.min}°C</Typography>
+                    <Typography>|</Typography>
+                    <Typography>{t("max")} : {temp.max}°C</Typography>
                   </div>
-                  <div style={{ display: "flex", gap: "20px" }}>
-                    <h5>
-                      {t("min")} : {temp.min ? `${temp.min}°C` : "-"}
-                    </h5>
-                    <h5>|</h5>
-                    <h5>
-                      {t("max")} : {temp.max ? `${temp.max}°C` : "-"}
-                    </h5>
-                  </div>
+                  <Typography>{t("feelsLike")} : {temp.feelsLike}°C</Typography>
+                  <Typography>{t("humidity")} : {temp.humidity}%</Typography>
+                  <Typography>{t("wind")} : {temp.wind} m/s</Typography>
                 </div>
-                <CloudIcon style={{ fontSize: "200px" }} />
+                <CloudIcon style={{ fontSize: "180px" }} />
               </div>
+              {error && (
+                <Typography color="error" style={{ marginTop: 10 }}>
+                  {error}
+                </Typography>
+              )}
             </div>
-            {/*== CONTENT ==*/}
           </div>
-          {/*== CARD ==*/}
-          <div
-            dir={language === "ar" ? "rtl" : "ltr"}
-            style={{ marginTop: "20px", width: "100%", display: "flex" }}
-          >
-            <Button
-              variant="text"
-              style={{ color: "white" }}
-              onClick={handleChangeLanguage}
-            >
+
+          <div dir={language === "ar" ? "rtl" : "ltr"} style={{ marginTop: "20px" }}>
+            <Button variant="text" style={{ color: "white" }} onClick={handleChangeLanguage}>
               {language === "en" ? "Arabic" : "إنجليزي"}
             </Button>
           </div>
