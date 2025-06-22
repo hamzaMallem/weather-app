@@ -15,6 +15,8 @@ import {
   MenuItem,
   createTheme,
   ThemeProvider,
+  useMediaQuery,
+  Box,
 } from "@mui/material";
 import CloudIcon from "@mui/icons-material/Cloud";
 
@@ -58,20 +60,19 @@ function App() {
   });
   const [error, setError] = useState(null);
 
-  // Switch language
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
+
   const handleChangeLanguage = () => {
     const newLang = language === "ar" ? "en" : "ar";
     i18n.changeLanguage(newLang);
     setLanguage(newLang);
   };
 
-  // Set locale format
   useEffect(() => {
     moment.locale(language);
     setDateTimeUse(moment().format(" dddd , MMMM Do YYYY "));
   }, [language]);
 
-  // Detect user location and find closest city
   useEffect(() => {
     const savedCity = localStorage.getItem("city");
     if (savedCity) {
@@ -91,8 +92,7 @@ function App() {
 
           cities.forEach((city) => {
             const d = Math.sqrt(
-              Math.pow(city.lat - userLat, 2) +
-              Math.pow(city.lon - userLon, 2)
+              Math.pow(city.lat - userLat, 2) + Math.pow(city.lon - userLon, 2)
             );
             if (d < minDistance) {
               minDistance = d;
@@ -116,7 +116,6 @@ function App() {
     }
   }, []);
 
-  // Fetch weather data for selected city
   useEffect(() => {
     if (!selectedCity) return;
     const city = cities.find((c) => c.name === selectedCity);
@@ -163,15 +162,16 @@ function App() {
       <ThemeProvider theme={theme}>
         <Container
           maxWidth="sm"
-          style={{
-            height: "100vh",
+          sx={{
+            minHeight: "100vh",
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
             flexDirection: "column",
+            padding: isSmallScreen ? 2 : 4,
           }}
         >
-          <div dir={language === "ar" ? "rtl" : "ltr"} style={{ width: "100%" }}>
+          <Box dir={language === "ar" ? "rtl" : "ltr"} width="100%">
             {isAutoLocating && !selectedCity && (
               <Typography>{t("usingYourLocation")}...</Typography>
             )}
@@ -179,7 +179,7 @@ function App() {
               value={selectedCity}
               onChange={(e) => setSelectedCity(e.target.value)}
               fullWidth
-              style={{ backgroundColor: "white", marginBottom: 20 }}
+              sx={{ backgroundColor: "white", mb: 2 }}
             >
               {cities.map((city) => (
                 <MenuItem key={city.name} value={city.name}>
@@ -187,64 +187,90 @@ function App() {
                 </MenuItem>
               ))}
             </Select>
-          </div>
+          </Box>
 
-          {/* Weather Card */}
-          <div
+          <Box
             dir={language === "ar" ? "rtl" : "ltr"}
-            style={{
+            sx={{
               backgroundColor: "#2196f3",
-              padding: "20px",
-              borderRadius: "10px",
+              p: 3,
+              borderRadius: 2,
               width: "100%",
               color: "white",
-              boxShadow: "0px 11px 4px 4px rgba(0,0,0,0.05)",
+              boxShadow: 3,
             }}
           >
-            <div>
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <Typography variant="h2">{t(selectedCity)}</Typography>
-                <Typography variant="h6">{dateTimeUse}</Typography>
-              </div>
-              <hr />
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <div style={{ textAlign: "center", padding: 2 }}>
-                  <div style={{ display: "flex", alignItems: "center" }}>
-                    <Typography variant="h2">
-                      {temp.number ? `${temp.number}°C` : "Loading..."}
-                    </Typography>
-                    {temp.icon && (
-                      <img
-                        src={`https://openweathermap.org/img/wn/${temp.icon}@2x.png`}
-                        alt="icon"
-                      />
-                    )}
-                  </div>
-                  <Typography variant="h6">{t(temp.description)}</Typography>
-                  <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
-                    <Typography>{t("min")} : {temp.min}°C</Typography>
-                    <Typography>|</Typography>
-                    <Typography>{t("max")} : {temp.max}°C</Typography>
-                  </div>
-                  <Typography>{t("feelsLike")} : {temp.feelsLike}°C</Typography>
-                  <Typography>{t("humidity")} : {temp.humidity}%</Typography>
-                  <Typography>{t("wind")} : {temp.wind} m/s</Typography>
-                </div>
-                <CloudIcon style={{ fontSize: "180px" }} />
-              </div>
-              {error && (
-                <Typography color="error" style={{ marginTop: 10 }}>
-                  {error}
+            <Box display="flex" justifyContent="space-between" flexWrap="wrap">
+              <Typography variant={isSmallScreen ? "h4" : "h2"}>
+                {t(selectedCity)}
+              </Typography>
+              <Typography variant="h6">{dateTimeUse}</Typography>
+            </Box>
+            <hr />
+            <Box display="flex" justifyContent="space-between" flexWrap="wrap">
+              <Box textAlign="center" p={2} flex={1}>
+                <Box display="flex" justifyContent="center" alignItems="center">
+                  <Typography variant={isSmallScreen ? "h4" : "h2"}>
+                    {temp.number ? `${temp.number}°C` : "Loading..."}
+                  </Typography>
+                  {temp.icon && (
+                    <img
+                      src={`https://openweathermap.org/img/wn/${temp.icon}@2x.png`}
+                      alt="icon"
+                    />
+                  )}
+                </Box>
+                <Typography variant="h6">{t(temp.description)}</Typography>
+                <Box display="flex" gap={2} justifyContent="center">
+                  <Typography>
+                    {t("min")}: {temp.min}°C
+                  </Typography>
+                  <Typography>|</Typography>
+                  <Typography>
+                    {t("max")}: {temp.max}°C
+                  </Typography>
+                </Box>
+                <Typography>
+                  {t("feelsLike")}: {temp.feelsLike}°C
                 </Typography>
-              )}
-            </div>
-          </div>
+                <Typography>
+                  {t("humidity")}: {temp.humidity}%
+                </Typography>
+                <Typography>
+                  {t("wind")}: {temp.wind} m/s
+                </Typography>
+              </Box>
+              <Box
+                display="flex"
+                justifyContent="center"
+                alignItems="center"
+                flex={1}
+              >
+                <CloudIcon sx={{ fontSize: isSmallScreen ? 100 : 180 }} />
+              </Box>
+            </Box>
+            {error && (
+              <Typography color="error" mt={2}>
+                {error}
+              </Typography>
+            )}
+          </Box>
 
-          <div dir={language === "ar" ? "rtl" : "ltr"} style={{ marginTop: "20px" }}>
-            <Button variant="text" style={{ color: "white" }} onClick={handleChangeLanguage}>
+          <Box
+            dir={language === "ar" ? "rtl" : "ltr"}
+            mt={3}
+            display="flex"
+            justifyContent="center"
+            width="100%"
+          >
+            <Button
+              variant="text"
+              color="inherit"
+              onClick={handleChangeLanguage}
+            >
               {language === "en" ? "Arabic" : "إنجليزي"}
             </Button>
-          </div>
+          </Box>
         </Container>
       </ThemeProvider>
     </div>
